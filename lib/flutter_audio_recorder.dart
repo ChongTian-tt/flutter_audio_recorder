@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:file/local.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
@@ -10,7 +9,6 @@ class FlutterAudioRecorder {
   static const MethodChannel _channel =
       const MethodChannel('flutter_audio_recorder');
   static const String DEFAULT_EXTENSION = '.m4a';
-  static LocalFileSystem fs = LocalFileSystem();
 
   String _path;
   String _extension;
@@ -53,7 +51,7 @@ class FlutterAudioRecorder {
           path += extension;
         }
       }
-      File file = fs.file(path);
+      File file = File(path);
       if (await file.exists()) {
         throw new Exception("A file already exists at the path :" + path);
       } else if (!await file.parent.exists()) {
@@ -77,7 +75,9 @@ class FlutterAudioRecorder {
     _recording = new Recording()
       ..status = _stringToRecordingStatus(response['status'])
       ..metering = new AudioMetering(
-          averagePower: -120, peakPower: -120, isMeteringEnabled: true);
+          averagePower: _toDouble(-120),
+          peakPower: _toDouble(-120),
+          isMeteringEnabled: true);
 
     return;
   }
@@ -148,10 +148,23 @@ class FlutterAudioRecorder {
     _recording.audioFormat = _stringToAudioFormat(response['audioFormat']);
     _recording.extension = response['audioFormat'];
     _recording.metering = new AudioMetering(
-        peakPower: response['peakPower'],
-        averagePower: response['averagePower'],
+        peakPower: _toDouble(response['peakPower']),
+        averagePower: _toDouble(response['averagePower']),
         isMeteringEnabled: response['isMeteringEnabled']);
     _recording.status = _stringToRecordingStatus(response['status']);
+  }
+
+  static double _toDouble(dynamic value, {double fallback = 0.0}) {
+    if (value is double) {
+      return value;
+    }
+    if (value is int) {
+      return value.toDouble();
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return fallback;
   }
 
   /// util - verify if extension string is supported
@@ -177,7 +190,7 @@ class FlutterAudioRecorder {
       case ".m4a":
         return AudioFormat.AAC;
       default:
-        return null;
+        return AudioFormat.WAV;
     }
   }
 

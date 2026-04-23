@@ -1,0 +1,14 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/flutter_ohos": "har/flutter.har",
+    "flutter_audio_recorder": "file:../har/flutter_audio_recorder.har",
+    "path_provider_ohos": "file:../har/path_provider_ohos.har",
+    "audioplayers_ohos": "file:../har/audioplayers_ohos.har"
+  }
+}

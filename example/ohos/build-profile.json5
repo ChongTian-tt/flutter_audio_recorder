@@ -1,0 +1,77 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "C:\\Users\\hoperun\\.ohos\\config\\default_ohos_zHJywtrD1YSHxudPRHljjB7Y9UgqvdTtZymHQTzl8Hc=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001A33717B3ED29C3920B97F18B27392B0A7E0365DDAE6B22F2DED4F4FA4C7AC1944D45B1D0D7525",
+          "profile": "C:\\Users\\hoperun\\.ohos\\config\\default_ohos_zHJywtrD1YSHxudPRHljjB7Y9UgqvdTtZymHQTzl8Hc=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:\\Users\\hoperun\\.ohos\\config\\default_ohos_zHJywtrD1YSHxudPRHljjB7Y9UgqvdTtZymHQTzl8Hc=.p12",
+          "storePassword": "0000001A1FA22D200B6A987BFDF465B1DD3A192C6C0999CAC64E6CF99A49168A3FFEF330AABC6B4C1C97"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flutter_audio_recorder",
+      "srcPath": "../../ohos",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "audioplayers_ohos",
+      "srcPath": "../../../../../flutterenv/Pub/Cache/git/flutter_audioplayers-e566d678531badc1437ada9fcca87c23d6355ba4/packages/audioplayers_ohos/ohos",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "path_provider_ohos",
+      "srcPath": "../../../../../flutterenv/Pub/Cache/git/flutter_packages-9d463c2acb74079d6892bb04ae9ad37b37c1b597/packages/path_provider/path_provider_ohos/ohos",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}
