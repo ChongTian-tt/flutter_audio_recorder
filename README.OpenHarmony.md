@@ -28,7 +28,7 @@ flutter pub get
 
 | Flutter Framework Version | TAG Name | Notes |
 | ------------------------- | -------- | ----- |
-| 3.7.12-ohos-1.0.6 | TBD |  |
+| 3.7.12-ohos-1.0.6 | 0.5.5-ohos-1.0.0 |  |
 
 ## Constraints
 
@@ -129,8 +129,10 @@ final Recording current = await recorder.current(channel: 0);
 
 | Name | Description | Type | Input | Output | ohos Support |
 | --- | --- | --- | --- | --- | --- |
+| `initialized` | Get recorder initialization future | Property | None | `Future` | yes |
+| `recording` | Get current recording object | Property | None | `Recording` | yes |
 | `hasPermissions` | Check and request recording permission | Property | None | `Future<bool>` | yes |
-| `_init()` | Recorder initialization logic (internal method) | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
+| `init()` | Recorder initialization logic (constructor initialization flow) | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
 | `start()` | Start recording | Function | None | `Future<void>` | yes |
 | `pause()` | Pause recording | Function | None | `Future<void>` | yes |
 | `resume()` | Resume recording | Function | None | `Future<void>` | yes |

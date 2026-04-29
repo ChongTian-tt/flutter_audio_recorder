@@ -37,6 +37,8 @@
 
 | 名称 | 类型 | 参数 | 返回类型 | 描述 |
 |------|------|------|----------|------|
+| `initialized` | Getter | - | `Future` | 返回初始化 Future |
+| `recording` | Getter | - | `Recording` | 返回当前录音对象 |
 | `init` | Method | `String path, {AudioFormat audioFormat, int sampleRate = 16000}` | `Future` | 初始化录音器（构造流程中的初始化能力） |
 | `start` | Method | - | `Future` | 启动录音 |
 | `pause` | Method | - | `Future` | 暂停录音 |

@@ -28,7 +28,7 @@ flutter pub get
 
 | Flutter 框架版本 | TAG 名称 | 备注 |
 | ---------------- | -------- | ---- |
-| 3.7.12-ohos-1.0.6 | 待补充 |  |
+| 3.7.12-ohos-1.0.6 | 0.5.5-ohos-1.0.0 |  |
 
 ## 约束与限制
 
@@ -129,8 +129,10 @@ final Recording current = await recorder.current(channel: 0);
 
 | Name | Description | Type | Input | Output | ohos Support |
 | --- | --- | --- | --- | --- | --- |
+| `initialized` | 获取初始化 Future | Property | 无 | `Future` | yes |
+| `recording` | 获取当前录音对象 | Property | 无 | `Recording` | yes |
 | `hasPermissions` | 检查并请求录音权限 | Property | 无 | `Future<bool>` | yes |
-| `_init()` | 录音器初始化逻辑（内部方法） | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
+| `init()` | 录音器初始化逻辑（构造流程中的初始化能力） | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
 | `start()` | 开始录音 | Function | 无 | `Future<void>` | yes |
 | `pause()` | 暂停录音 | Function | 无 | `Future<void>` | yes |
 | `resume()` | 恢复录音 | Function | 无 | `Future<void>` | yes |
