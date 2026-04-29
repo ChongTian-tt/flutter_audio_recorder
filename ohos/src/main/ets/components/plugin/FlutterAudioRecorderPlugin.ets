@@ -38,12 +38,14 @@ import {
   RECORDER_BPP,
   RecorderFormat,
   TAG,
-} from './RecorderConstants.js';
+} from './RecorderConstants';
 
 /** FlutterAudioRecorderPlugin **/
 export default class FlutterAudioRecorderPlugin implements FlutterPlugin, MethodCallHandler, AbilityAware {
+  private static readonly RE_AUTH_FLAG_FILE_NAME: string = '.flutter_audio_recorder_reauth';
   private channel: MethodChannel | null = null;
   private context: common.UIAbilityContext | null = null;
+  private shouldTriggerReAuth: boolean = false;
 
   // WAV 录音模式下使用的 AudioCapturer 相关状态。
   private audioCapturer: audio.AudioCapturer | null = null;
@@ -126,36 +128,187 @@ export default class FlutterAudioRecorderPlugin implements FlutterPlugin, Method
    */
   private async handleHasPermissions(result: MethodResult): Promise<void> {
     try {
-      Log.i(TAG, `hasPermission start`)
       let permission: Permissions = 'ohos.permission.MICROPHONE';
-      let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
-      // 查询权限前先解析当前应用的访问令牌。
-      let bundleInfo: bundleManager.BundleInfo = bundleManager.getBundleInfoForSelfSync(
-        bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION
-      );
-      let tokenId: number = bundleInfo.appInfo.accessTokenId;
-      let grantStatus: abilityAccessCtrl.GrantStatus =
-        atManager.checkAccessTokenSync(tokenId, permission);
+      Log.i(TAG, `hasPermission start, shouldTriggerReAuth=${this.shouldTriggerReAuth}`);
 
-      if (grantStatus === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
+      // 每次权限判断前先同步一次持久化状态，保证杀进程重进后行为连续。
+      this.syncReAuthStateFromStorage();
+
+      if (this.isPermissionGranted(permission)) {
+        this.updateReAuthState(false);
         result.success(true);
         return;
       }
 
-      // 运行时权限申请依赖 UIAbilityContext。
-      if (this.context != null) {
-        let reqResult =
-          await atManager.requestPermissionsFromUser(this.context, [permission]);
-        let granted: boolean = reqResult.authResults[0] === 0;
-        result.success(granted);
-      } else {
+      if (this.context == null) {
         Log.e(TAG, 'No UIAbilityContext for permission request');
         result.success(false);
+        return;
       }
+
+      // 若已记录“曾拒绝”，本次直接走系统设置二次授权入口。
+      if (this.shouldTriggerReAuth) {
+        let reGranted: boolean = await this.re_authentication(this.context, permission);
+        this.updateReAuthState(!reGranted);
+        result.success(reGranted);
+        return;
+      }
+
+      // 首次走标准系统授权弹窗；拒绝后仅记录状态，不在本次立即二次弹窗。
+      let granted: boolean = await this.requestRuntimePermission(this.context, permission);
+      if (granted) {
+        this.updateReAuthState(false);
+        result.success(true);
+        return;
+      }
+
+      this.updateReAuthState(true);
+      result.success(false);
     } catch (e) {
       let error: BusinessError = e as BusinessError;
       Log.e(TAG, 'hasPermissions error: ' + error.message);
       result.success(false);
+    }
+  }
+
+  /**
+   * 同步检查应用当前麦克风权限状态。
+   */
+  private isPermissionGranted(permission: Permissions): boolean {
+    const atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
+    const bundleInfo: bundleManager.BundleInfo = bundleManager.getBundleInfoForSelfSync(
+      bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_APPLICATION
+    );
+    const tokenId: number = bundleInfo.appInfo.accessTokenId;
+    const grantStatus: abilityAccessCtrl.GrantStatus = atManager.checkAccessTokenSync(tokenId, permission);
+    return grantStatus === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+  }
+
+  /**
+   * 触发标准系统运行时授权弹窗。
+   */
+  private async requestRuntimePermission(context: common.UIAbilityContext, permission: Permissions): Promise<boolean> {
+    const atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
+    const reqResult = await atManager.requestPermissionsFromUser(context, [permission]);
+    return reqResult.authResults.length > 0 &&
+      reqResult.authResults[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+  }
+
+  /**
+   * 计算二次授权标记文件的绝对路径。
+   *
+   * 持久化原理：
+   * - 标记文件存放在 `UIAbilityContext.filesDir` 下，该目录属于应用沙箱持久目录；
+   * - 进程被杀后文件仍保留，应用重启可再次读取；
+   * - 应用卸载时目录会被系统清理。
+   *
+   * @returns {string | null}
+   * - 返回标记文件绝对路径：`<filesDir>/.flutter_audio_recorder_reauth`；
+   * - 当 `context` 不可用或 `filesDir` 不可用时返回 `null`。
+   */
+  private getReAuthFlagFilePath(): string | null {
+    if (this.context == null || !this.context.filesDir) {
+      return null;
+    }
+    return `${this.context.filesDir}/${FlutterAudioRecorderPlugin.RE_AUTH_FLAG_FILE_NAME}`;
+  }
+
+  /**
+   * 从标记文件同步二次授权状态到内存。
+   *
+   * `fileIo` 操作说明：
+   * - 使用 `fileIo.statSync(path)` 探测文件是否存在；
+   * - 存在：说明曾记录“下一次应触发二次授权”，将 `shouldTriggerReAuth` 置为 `true`；
+   * - 不存在（或路径不可访问）：将 `shouldTriggerReAuth` 置为 `false`。
+   *
+   * @returns {void}
+   * - 无返回值，仅更新类内状态 `shouldTriggerReAuth`。
+   */
+  private syncReAuthStateFromStorage(): void {
+    const flagPath = this.getReAuthFlagFilePath();
+    if (flagPath == null) {
+      return;
+    }
+    try {
+      fileIo.statSync(flagPath);
+      this.shouldTriggerReAuth = true;
+    } catch (e) {
+      this.shouldTriggerReAuth = false;
+    }
+  }
+
+  /**
+   * 同步更新内存状态与持久化标记文件，避免状态漂移。
+   *
+   * `fileIo` 持久化流程：
+   * - `shouldTrigger=true`：
+   *   1) `openSync(CREATE | WRITE_ONLY | TRUNC)` 创建/截断标记文件；
+   *   2) `writeSync(fd, '1')` 写入占位内容；
+   *   3) `closeSync(fd)` 关闭文件句柄，确保写入完成。
+   * - `shouldTrigger=false`：
+   *   1) `unlinkSync(path)` 删除标记文件，表示不需要二次授权。
+   *
+   * 说明：
+   * - 这里的“原子”指“同一次方法调用内，先更新内存再尽力同步到文件”；
+   * - 文件操作异常会记录日志并尽量回收句柄，不中断主流程；
+   * - 删除时若文件不存在会忽略，保证幂等调用。
+   *
+   * @param {boolean} shouldTrigger
+   * - `true`：持久化“下一次应触发二次授权”；
+   * - `false`：清除该标记。
+   * @returns {void}
+   * - 无返回值，效果体现在内存状态与文件系统。
+   */
+  private updateReAuthState(shouldTrigger: boolean): void {
+    this.shouldTriggerReAuth = shouldTrigger;
+    const flagPath = this.getReAuthFlagFilePath();
+    if (flagPath == null) {
+      return;
+    }
+
+    if (shouldTrigger) {
+      let fd: number = -1;
+      try {
+        const fileObj = fileIo.openSync(
+          flagPath,
+          fileIo.OpenMode.CREATE | fileIo.OpenMode.WRITE_ONLY | fileIo.OpenMode.TRUNC
+        );
+        fd = fileObj.fd;
+        fileIo.writeSync(fd, '1');
+      } catch (e) {
+        Log.w(TAG, 'Failed to persist re-auth flag');
+      } finally {
+        if (fd >= 0) {
+          try {
+            fileIo.closeSync(fd);
+          } catch (e) {
+            Log.w(TAG, 'Failed to close re-auth flag file descriptor');
+          }
+        }
+      }
+      return;
+    }
+
+    try {
+      fileIo.unlinkSync(flagPath);
+    } catch (e) {
+      // 标记文件不存在时忽略，确保清理逻辑幂等。
+    }
+  }
+
+  private async re_authentication(context: common.UIAbilityContext, permission: Permissions): Promise<boolean> {
+    let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
+    try {
+      let data: Array<abilityAccessCtrl.GrantStatus> =
+        await atManager.requestPermissionOnSetting(context, [permission]);
+      if (data && data.length > 0 && data[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      Log.e(TAG, 're_authentication error: ' + error);
+      return false;
     }
   }
 

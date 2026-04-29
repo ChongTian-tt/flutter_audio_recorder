@@ -14,9 +14,5 @@
   },
   "overrides": {
     "@ohos/flutter_ohos": "file:./har/flutter.har",
-    "flutter_audio_recorder": "../../ohos",
-    "path_provider_ohos": "../../../../../flutterenv/Pub/Cache/git/flutter_packages-9d463c2acb74079d6892bb04ae9ad37b37c1b597/packages/path_provider/path_provider_ohos/ohos",
-    "@ohos/flutter_module": "file:./entry",
-    "audioplayers_ohos": "../../../../../flutterenv/Pub/Cache/git/flutter_audioplayers-e566d678531badc1437ada9fcca87c23d6355ba4/packages/audioplayers_ohos/ohos"
   }
 }
