@@ -129,8 +129,6 @@ final Recording current = await recorder.current(channel: 0);
 
 | Name | Description | Type | Input | Output | ohos Support |
 | --- | --- | --- | --- | --- | --- |
-| `initialized` | 获取初始化 Future | Property | 无 | `Future` | yes |
-| `recording` | 获取当前录音对象 | Property | 无 | `Recording` | yes |
 | `hasPermissions` | 检查并请求录音权限 | Property | 无 | `Future<bool>` | yes |
 | `init()` | 录音器初始化逻辑（构造流程中的初始化能力） | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
 | `start()` | 开始录音 | Function | 无 | `Future<void>` | yes |

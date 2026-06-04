@@ -129,8 +129,6 @@ final Recording current = await recorder.current(channel: 0);
 
 | Name | Description | Type | Input | Output | ohos Support |
 | --- | --- | --- | --- | --- | --- |
-| `initialized` | Get recorder initialization future | Property | None | `Future` | yes |
-| `recording` | Get current recording object | Property | None | `Recording` | yes |
 | `hasPermissions` | Check and request recording permission | Property | None | `Future<bool>` | yes |
 | `init()` | Recorder initialization logic (constructor initialization flow) | Function | `String path, AudioFormat audioFormat, int sampleRate` | `Future` | yes |
 | `start()` | Start recording | Function | None | `Future<void>` | yes |
