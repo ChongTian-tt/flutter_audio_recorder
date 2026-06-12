@@ -43,6 +43,7 @@ export const MP4_AUDIO_FORMAT: RecorderFormat = {
   extension: '.mp4',
 };
 
+// CFT_AAC 需要 api 20
 export const AAC_FORMAT: RecorderFormat = {
   kind: 'encoded',
   codec: media.CodecMimeType.AUDIO_AAC,
